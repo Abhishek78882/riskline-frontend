@@ -1,8 +1,88 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+@custom-variant dark (&:is(.dark *));
+
+/* ---------------------------------------------------------------------- */
+/* DESIGN.md §1 — color system. Dark only, no light/dark toggle. These are */
+/* the literal source-of-truth tokens; shadcn's semantic slots below only  */
+/* reference them, never redefine a color inline.                         */
+/* ---------------------------------------------------------------------- */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Surfaces (atmospheric dark, layered by elevation) */
+  --bg: #0b0e14;
+  --surface: #141922;
+  --card: #1a2029;
+  --border: #242b36;
+
+  /* Text */
+  --text: #e6eaf0;
+  --text-muted: #8a94a6;
+
+  /* Accent — exactly one, interaction only. Never used for severity. */
+  --accent: #5b8def;
+
+  /* Severity / status — semantic, communicates incident state only */
+  --sev-high: #f0616d;
+  --sev-medium: #e5a54b;
+  --sev-low: #8a94a6;
+  --sev-healthy: #4cc38a;
+
+  --radius: 0.625rem;
+}
+
+/* ---------------------------------------------------------------------- */
+/* shadcn semantic slots, mapped onto the tokens above. shadcn's own       */
+/* "--accent" is a neutral hover/selected-row fill (Radix menus, calendar) */
+/* — a different concept from DESIGN.md's single brand accent — so it     */
+/* stays neutral here. The brand accent drives --primary and --ring       */
+/* instead, which is what actually renders as buttons/active-tab/focus.   */
+/* ---------------------------------------------------------------------- */
+:root {
+  --background: var(--bg);
+  --foreground: var(--text);
+
+  --card-foreground: var(--text);
+  --popover: var(--surface);
+  --popover-foreground: var(--text);
+
+  /* Dark text on the accent gives ~6:1 contrast; white text on this
+     mid-tone blue only clears ~2.7:1 and fails AA. */
+  --primary: var(--accent);
+  --primary-foreground: var(--bg);
+
+  --secondary: var(--surface);
+  --secondary-foreground: var(--text);
+
+  --muted: var(--surface);
+  --muted-foreground: var(--text-muted);
+
+  --accent-foreground: var(--text);
+
+  --destructive: var(--sev-high);
+  --destructive-foreground: var(--text);
+
+  --input: var(--border);
+  --ring: var(--accent);
+
+  /* Chart categorical palette is not defined by DESIGN.md (only severity
+     colors + one accent exist); this is a safe placeholder until sparkline
+     theming is designed in a later phase. */
+  --chart-1: var(--accent);
+  --chart-2: var(--sev-healthy);
+  --chart-3: var(--sev-medium);
+  --chart-4: var(--sev-high);
+  --chart-5: var(--text-muted);
+
+  --sidebar: var(--surface);
+  --sidebar-foreground: var(--text);
+  --sidebar-primary: var(--accent);
+  --sidebar-primary-foreground: var(--bg);
+  --sidebar-accent: var(--card);
+  --sidebar-accent-foreground: var(--text);
+  --sidebar-border: var(--border);
+  --sidebar-ring: var(--accent);
 }
 
 @theme inline {
@@ -10,17 +90,95 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  /* DESIGN.md §2: landing hero + section/page headings ONLY — apply the
+     `font-heading` utility deliberately, never blanket it onto dense UI. */
+  --font-heading: var(--font-dm-serif-display);
+
+  /* Direct DESIGN.md token utilities: bg-bg, bg-surface, bg-card,
+     border-border, text-ink, text-muted, text-accent, text-sev-high, etc. */
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--text);
+  --color-muted: var(--text-muted);
+  --color-accent: var(--accent);
+  --color-sev-high: var(--sev-high);
+  --color-sev-medium: var(--sev-medium);
+  --color-sev-low: var(--sev-low);
+  --color-sev-healthy: var(--sev-healthy);
+
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* DESIGN.md §1 — "very subtle radial or layered depth to the app
+   background — atmosphere, not a gradient wash." Applied once, on the
+   root shell background, not per-panel. */
+.atmosphere {
+  background-color: var(--bg);
+  background-image:
+    radial-gradient(ellipse 1100px 700px at 8% -15%, color-mix(in oklch, var(--accent) 16%, transparent), transparent),
+    radial-gradient(ellipse 800px 600px at 105% 15%, color-mix(in oklch, var(--sev-healthy) 9%, transparent), transparent);
+  background-repeat: no-repeat;
+}
+
+/* Landing hero background. Looks complete on its own (atmosphere + dark
+   gradient). To drop in the provided photo later: save it to
+   public/hero.jpg and uncomment the next line — that's the whole change. */
+.hero-atmosphere {
+  --hero-image: none;
+  /* --hero-image: url("/hero.jpg"); */
+  background-color: var(--bg);
+  background-image:
+    linear-gradient(180deg, color-mix(in oklch, var(--bg) 55%, transparent), var(--bg) 92%),
+    radial-gradient(ellipse 1200px 800px at 15% -10%, color-mix(in oklch, var(--accent) 14%, transparent), transparent),
+    var(--hero-image);
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
 }
