@@ -68,6 +68,8 @@ The wrapper imports and calls the **existing** functions. No new logic; it only 
 | POST | `/api/upload` | `run_detection_pipeline(df, ground_truth=None)` + `build_all_evidence_packs(...)` | pipeline status + counts + incidents (writes to `data/upload_demo/`) |
 | GET | `/api/health` | — | `{status: ok}` for warm-up pings |
 
+All endpoints above except `/api/upload` and `/api/health` accept a `?dataset=built_in|upload` query param (default `built_in`) to disambiguate incidents, since both datasets reuse the same IDs (I-001..I-005).
+
 Key rules for the wrapper:
 - Read the Gemini key from env (`GEMINI_API_KEY`) exactly as the engine already does; never hardcode.
 - Upload endpoint writes only to `data/upload_demo/`, never the committed `data/*.json`.
@@ -148,13 +150,15 @@ Purpose: incident-scoped conversational follow-up.
 - Loading state ("Jerry is checking the evidence…") during the call.
 - A light guard for general app questions (answer locally, don't send to the API) — same behavior as today.
 
-### PRIORITY 6 (only if time) — Architecture tab
-A clean visual of the code-detects / AI-explains flow. Nice-to-have; skip if the deadline is tight.
+### PRIORITY 6 — Architecture tab
+*(Built — 2026-07-14.)* A clean visual of the code-detects / AI-explains flow, at `/architecture`, reachable from the top nav alongside Overview.
 
 ---
 
 ## 6. Component inventory (for Claude Code)
-- `AppShell` (dark theme, sidebar with selected-incident context + reset controls, top nav = wordmark + Overview + Architecture only — see IA change note in §5)
+- `AppShell` (dark theme, top nav = wordmark + Overview + Architecture + a global Reset session control — see IA change note in §5)
+
+> **Sidebar removal — 2026-07-15.** The right-hand "Selected Incident" sidebar described in earlier drafts of this spec was cut. It only ever showed useful content after drilling into an incident, at which point Incident Detail's own header already carries that context — so on Overview it was empty or stale scaffolding. Reset session now lives in the top nav (reachable from anywhere except Incident Detail, which keeps its own copy) instead of the sidebar.
 - `IncidentDetailShell` (header: id/title/severity badge + the Diagnosis/Evidence/Ask Jerry sub-tab bar, nested one level below the top nav)
 - `KpiCard`, `KpiRow`
 - `IncidentCard`, `IncidentList`

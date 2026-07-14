@@ -25,9 +25,12 @@ Under `data/`:
 ## Incident identity (for the UI)
 Five incidents in demo order: I-001 processor outage (High), I-002 card-testing fraud (High), I-003 benign promo (Investigate — the false-positive trap, must read visually quiet), I-004 3DS/ACS failure (High), I-005 minor/unclassified (Low, needs review). Severity drives card color.
 
+## Dataset selector
+Every read endpoint and `/diagnose`/`/ask` take a `dataset` query param (`built_in` default, or `upload`) since both datasets reuse the same incident IDs (I-001..I-005). It only switches which `data/*.json` vs `data/upload_demo/*.json` path is read — it does not touch `src/detection.py`'s ID assignment.
+
 ## Hard rules for the wrapper
 - Env: read `GEMINI_API_KEY` (and optional `GEMINI_MODEL`) from environment exactly as the engine does. Never hardcode a key.
 - Upload writes only to `data/upload_demo/` (gitignored). Never overwrite committed `data/*.json`.
 - Return `source` and `verifier_warnings` untouched so the UI can render Gemini-vs-fallback and grounding warnings.
-- On upload, ground truth is absent, so recall is n/a — pass that through honestly; the UI labels it "n/a".
-- Enable CORS for the frontend origin (localhost:3000 in dev, the Vercel domain in prod).
+- On upload, ground truth is absent, so recall is n/a — pass that through honestly; the UI labels it "n/a". There is also no precomputed `diagnoses.json` equivalent for upload — diagnoses are always generated live via `POST /api/incidents/{id}/diagnose`.
+- Enable CORS for the frontend origin (localhost:3000 in dev, the Vercel domain in prod, plus any origin in `FRONTEND_ORIGIN`).
