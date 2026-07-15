@@ -55,7 +55,7 @@ export function IncidentCard({ incident, dataset }: { incident: Incident; datase
       href={datasetHref(`/incident/${incident.incident_id}`, dataset)}
       onClick={() => setIncident(incident, dataset)}
       className={cn(
-        "group flex flex-col gap-3 rounded-lg border-y border-r border-border border-l-4 bg-card px-5 py-4 transition-transform duration-200 hover:-translate-y-0.5",
+        "incident-card group flex flex-col gap-3 rounded-lg border-y border-r border-border border-l-4 bg-card px-5 py-4",
         LEFT_BORDER[incident.severity],
       )}
     >

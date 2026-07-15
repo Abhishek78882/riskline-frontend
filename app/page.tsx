@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 import { ArrowRight } from "lucide-react";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 
@@ -17,14 +18,89 @@ const reveal: Variants = {
   visible: { opacity: 1, y: 0 },
 };
 
+// DESIGN.md §4: transform/opacity only, respects prefers-reduced-motion.
+// A gentle damped follow — the glow eases toward the cursor over ~1s, never
+// snaps to it. Disabled on touch/reduced-motion, falling back to the CSS
+// `hero-drift` keyframe already on `.hero-glow`.
+// Kept small (was 70px): the black-strip bug was this offset pulling the
+// glow's light away from an edge as it eased toward the opposite one. A
+// bigger/softer blob (see .hero-glow in globals.css) plus a static
+// .hero-ambient base layer are the primary fix; a smaller max travel is
+// the belt-and-suspenders second half of it.
+const GLOW_MAX_OFFSET_PX = 36;
+const GLOW_EASE = 0.035;
+
+function subscribePointerFine(callback: () => void) {
+  const mql = window.matchMedia("(pointer: fine)");
+  mql.addEventListener("change", callback);
+  return () => mql.removeEventListener("change", callback);
+}
+function getPointerFineSnapshot() {
+  return window.matchMedia("(pointer: fine)").matches;
+}
+function getPointerFineServerSnapshot() {
+  return false;
+}
+
+function useCursorGlow(ref: RefObject<HTMLDivElement | null>, enabled: boolean) {
+  useEffect(() => {
+    const el = ref.current;
+    if (!enabled || !el) return;
+
+    const target = { x: 0, y: 0 };
+    const current = { x: 0, y: 0 };
+    let raf = 0;
+
+    const handlePointerMove = (e: PointerEvent) => {
+      if (e.pointerType === "touch") return;
+      const rect = el.getBoundingClientRect();
+      target.x = ((e.clientX - rect.left) / rect.width - 0.5) * 2 * GLOW_MAX_OFFSET_PX;
+      target.y = ((e.clientY - rect.top) / rect.height - 0.5) * 2 * GLOW_MAX_OFFSET_PX;
+    };
+
+    const tick = () => {
+      current.x += (target.x - current.x) * GLOW_EASE;
+      current.y += (target.y - current.y) * GLOW_EASE;
+      el.style.transform = `translate3d(${current.x.toFixed(2)}px, ${current.y.toFixed(2)}px, 0)`;
+      raf = requestAnimationFrame(tick);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove, { passive: true });
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      cancelAnimationFrame(raf);
+      el.style.transform = "";
+    };
+  }, [ref, enabled]);
+}
+
 export default function LandingPage() {
   const reduceMotion = useReducedMotion();
   const transition = (delay: number) =>
     reduceMotion ? { duration: 0 } : { duration: 0.4, delay, ease: [0.16, 1, 0.3, 1] as const };
 
+  const glowRef = useRef<HTMLDivElement>(null);
+  const pointerFine = useSyncExternalStore(
+    subscribePointerFine,
+    getPointerFineSnapshot,
+    getPointerFineServerSnapshot,
+  );
+  const cursorFollowEnabled = pointerFine && !reduceMotion;
+  useCursorGlow(glowRef, cursorFollowEnabled);
+
   return (
-    <main className="hero-atmosphere flex min-h-screen flex-col justify-center px-8 py-24 sm:px-16">
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-16">
+    <main className="hero-atmosphere flex min-h-screen flex-col justify-center overflow-hidden px-8 py-24 sm:px-16">
+      <div className="hero-ambient" aria-hidden="true" />
+      <div
+        ref={glowRef}
+        className={`hero-glow${cursorFollowEnabled ? " hero-glow--interactive" : ""}`}
+        aria-hidden="true"
+      />
+      <div className="hero-vignette" aria-hidden="true" />
+      <div className="hero-grain" aria-hidden="true" />
+      <div className="relative z-10 mx-auto flex w-full max-w-5xl flex-col gap-16">
         <motion.div
           className="flex flex-col gap-8"
           initial="hidden"
@@ -56,11 +132,11 @@ export default function LandingPage() {
         >
           <Link
             href="/overview"
-            className="group flex flex-col gap-2 rounded-lg border border-accent/40 bg-accent/10 px-6 py-5 transition-colors hover:bg-accent/15"
+            className="group entry-card entry-card--primary flex flex-col gap-2 rounded-lg px-6 py-5"
           >
             <span className="flex items-center justify-between text-sm font-medium text-ink">
               Start with built-in demo
-              <ArrowRight className="size-4 text-accent transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="size-4 text-accent transition-transform duration-200 group-hover:translate-x-0.5" />
             </span>
             <span className="text-xs text-muted">
               5 pre-computed incidents, instant load, no setup.
@@ -69,11 +145,11 @@ export default function LandingPage() {
 
           <Link
             href="/upload"
-            className="group flex flex-col gap-2 rounded-lg border border-border bg-surface px-6 py-5 transition-colors hover:border-accent/30"
+            className="group entry-card flex flex-col gap-2 rounded-lg px-6 py-5"
           >
             <span className="flex items-center justify-between text-sm font-medium text-ink">
               Upload demo dataset
-              <ArrowRight className="size-4 text-muted transition-transform group-hover:translate-x-0.5" />
+              <ArrowRight className="size-4 text-muted transition-all duration-200 group-hover:translate-x-0.5 group-hover:text-accent" />
             </span>
             <span className="text-xs text-muted">
               Run detection live against a sample CSV.

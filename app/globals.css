@@ -157,14 +157,39 @@
 }
 
 /* DESIGN.md §1 — "very subtle radial or layered depth to the app
-   background — atmosphere, not a gradient wash." Applied once, on the
-   root shell background, not per-panel. */
-.atmosphere {
+   background — atmosphere, not a gradient wash." Shared by every non-
+   landing shell route via AppShell. `position: fixed` ties it to the
+   viewport rather than the scrollable content box, so it can never fall
+   short of covering the frame on scroll/overscroll (same bug class fixed
+   on the landing hero below). Always static — no drift, no cursor-follow
+   — so it never competes with data. Two intensities: `--faint` for data
+   screens (Overview, Incident Detail, Upload — opaque `bg-card`/`bg-surface`
+   tiles already block it from ever sitting behind a number or chart, so
+   even "faint" is safe), `--medium` for Architecture, a showcase page with
+   no dense data to protect. */
+.app-atmosphere {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
   background-color: var(--bg);
+}
+
+/* Indigo-only (no green) so the theme reads as one continuous idea with
+   the landing hero rather than two different palettes. Corner-anchored on
+   purpose: the main content column (page padding, `bg-card`/`bg-surface`
+   tiles) runs center-left, so the peak of each bloom sits in the margins,
+   never under prose or a KPI number. */
+.app-atmosphere--faint {
   background-image:
-    radial-gradient(ellipse 1100px 700px at 8% -15%, color-mix(in oklch, var(--accent) 16%, transparent), transparent),
-    radial-gradient(ellipse 800px 600px at 105% 15%, color-mix(in oklch, var(--sev-healthy) 9%, transparent), transparent);
-  background-repeat: no-repeat;
+    radial-gradient(ellipse 1200px 850px at 100% 0%, color-mix(in oklch, var(--accent) 13%, transparent), transparent 72%),
+    radial-gradient(ellipse 900px 700px at 0% 100%, color-mix(in oklch, var(--accent) 8%, transparent), transparent 72%);
+}
+
+.app-atmosphere--medium {
+  background-image:
+    radial-gradient(ellipse 1300px 950px at 84% 6%, color-mix(in oklch, var(--accent) 20%, transparent), transparent 68%),
+    radial-gradient(ellipse 950px 750px at 10% 94%, color-mix(in oklch, var(--accent) 11%, transparent), transparent 70%);
 }
 
 /* Landing hero background. Looks complete on its own (atmosphere + dark
@@ -173,12 +198,202 @@
 .hero-atmosphere {
   --hero-image: none;
   /* --hero-image: url("/hero.jpg"); */
+  position: relative;
+  isolation: isolate;
   background-color: var(--bg);
-  background-image:
-    linear-gradient(180deg, color-mix(in oklch, var(--bg) 55%, transparent), var(--bg) 92%),
-    radial-gradient(ellipse 1200px 800px at 15% -10%, color-mix(in oklch, var(--accent) 14%, transparent), transparent),
-    var(--hero-image);
+  background-image: var(--hero-image);
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+}
+
+/* Static ambient base — always full-bleed and centered, independent of the
+   cursor. Its job is to guarantee a minimum level of light everywhere in
+   the frame, so the moving `.hero-glow` above it can only ever ADD light
+   on top; it can never reveal a totally unlit edge by drifting away from
+   it. This is the real fix for the black-strip bug: the previous version
+   had only the moving blob, so pushing it toward one edge pulled all the
+   light away from the opposite edge, exposing bare `--bg` as a hard seam. */
+.hero-ambient {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 2400px 1600px at 50% 45%, color-mix(in oklch, var(--accent) 7%, transparent), transparent 78%),
+    linear-gradient(180deg, color-mix(in oklch, var(--accent) 4%, transparent), transparent 45%);
+}
+
+/* Soft aurora bloom, off to the right of the hero text where the
+   composition was empty — restrained indigo light fading to near-black,
+   never a full-bleed wash. Sits behind content, never intercepts clicks.
+   `position: fixed` (not absolute) so it's pinned to the viewport, not to
+   `.hero-atmosphere`'s own box.
+   Sized deliberately huge with a long, gentle falloff (`transparent 85%`
+   on a >1500px ellipse) so that even at the cursor-follow's max travel
+   offset, the bloom still bleeds past every edge of the viewport — no
+   position it can ease to fully vacates a corner. Travel offset itself
+   (see GLOW_MAX_OFFSET_PX in page.tsx) is also kept small, so this is a
+   belt-and-suspenders fix: the blob is too big and the movement too
+   small for a bare edge to ever be possible. */
+.hero-glow {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  overflow: hidden;
+  pointer-events: none;
+  background-image:
+    radial-gradient(ellipse 2000px 1400px at 72% 34%, color-mix(in oklch, var(--accent) 20%, transparent), transparent 85%),
+    radial-gradient(ellipse 1600px 1200px at 56% 66%, color-mix(in oklch, var(--accent) 10%, transparent), transparent 85%);
+  animation: hero-drift 26s ease-in-out infinite;
+}
+
+@keyframes hero-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.92;
+  }
+  50% {
+    transform: translate3d(-1.2%, 1.4%, 0) scale(1.035);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-glow {
+    animation: none;
+  }
+}
+
+/* Cursor-follow variant (pointer:fine + no reduced-motion only — see
+   useCursorGlow in page.tsx). JS drives `transform` on this element via
+   rAF each frame, so the idle CSS drift keyframe is turned off to avoid
+   the two fighting over the same property. */
+.hero-glow--interactive {
+  animation: none;
+  will-change: transform;
+}
+
+/* Vignette: fades the glow back to base charcoal at the frame edges and
+   under the copy block so type contrast is never in question. Also fixed
+   for the same full-viewport-coverage reason as `.hero-glow` above. */
+.hero-vignette {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background-image:
+    linear-gradient(180deg, transparent 0%, transparent 55%, color-mix(in oklch, var(--bg) 80%, transparent) 100%),
+    linear-gradient(90deg, var(--bg) 0%, transparent 30%, transparent 100%),
+    radial-gradient(ellipse 1400px 1000px at 50% 50%, transparent 45%, color-mix(in oklch, var(--bg) 55%, transparent) 100%);
+}
+
+/* Matte grain for a cinematic, non-flat finish. Baked-in low alpha via
+   feColorMatrix; opacity below keeps it just barely perceptible. Fixed
+   for the same full-viewport-coverage reason as `.hero-glow` above. */
+.hero-grain {
+  position: fixed;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+  opacity: 0.035;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix type='matrix' values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 1 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px 160px;
+}
+
+/* Landing entry cards — a matched liquid-glass pair, sitting directly over
+   the moving hero-glow. Both share the same single blur layer, hairline
+   top-edge highlight (the classic glass "light catching the bevel" cue,
+   done as a cheap inset box-shadow, not a second filter), and hover
+   behavior; only the border/tint strength differs slightly so "built-in
+   demo" reads as primary without one card going blue and the other plain.
+   Text is `--text` on a background that stays within ~4-6% white of `--bg`
+   even at its lightest, i.e. darker than `--surface` (#141922) — contrast
+   comfortably clears WCAG AA regardless of what the glow behind is doing. */
+.entry-card {
+  position: relative;
+  background-color: color-mix(in oklch, white 4%, transparent);
+  border: 1px solid color-mix(in oklch, white 8%, var(--border));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklch, white 10%, transparent),
+    0 1px 3px 0 color-mix(in oklch, black 25%, transparent);
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 200ms ease-out,
+    background-color 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+
+.entry-card:hover {
+  transform: translateY(-2px);
+  background-color: color-mix(in oklch, white 6%, transparent);
+  border-color: color-mix(in oklch, var(--accent) 42%, var(--border));
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklch, white 14%, transparent),
+    0 14px 32px -16px color-mix(in oklch, var(--accent) 48%, transparent);
+}
+
+.entry-card--primary {
+  background-color: color-mix(in oklch, var(--accent) 4%, color-mix(in oklch, white 4%, transparent));
+  border-color: color-mix(in oklch, var(--accent) 26%, var(--border));
+}
+
+.entry-card--primary:hover {
+  border-color: color-mix(in oklch, var(--accent) 58%, var(--border));
+  box-shadow:
+    inset 0 1px 0 0 color-mix(in oklch, white 14%, transparent),
+    0 16px 36px -16px color-mix(in oklch, var(--accent) 60%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .entry-card:hover {
+    transform: none;
+  }
+}
+
+/* Shared calm hover language for solid (non-glass) interactive surfaces
+   elsewhere in the app — the same "accent-tinted border/glow" cue as the
+   landing entry cards, scaled down for panels that sit on ordinary
+   `--surface`/`--card` backgrounds rather than glass. Accent is the only
+   color used for the cue, per DESIGN.md §1 — never a status/severity
+   signal, and only ever applied to genuinely clickable surfaces (never a
+   static panel, chart, or KPI tile). */
+.interactive-surface {
+  transition: border-color 200ms ease-out, box-shadow 200ms ease-out;
+}
+
+.interactive-surface:hover {
+  border-color: color-mix(in oklch, var(--accent) 32%, var(--border));
+  box-shadow: 0 8px 20px -14px color-mix(in oklch, var(--accent) 35%, transparent);
+}
+
+/* Incident cards (Overview) keep a severity-colored left edge that must
+   never shift on hover, so only the other three sides pick up the accent
+   tint — a plain `border-color` shorthand would also overwrite
+   `border-left-color` and wash out the severity signal. */
+.incident-card {
+  transition:
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-top-color 200ms ease-out,
+    border-right-color 200ms ease-out,
+    border-bottom-color 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+
+.incident-card:hover {
+  transform: translateY(-2px);
+  border-top-color: color-mix(in oklch, var(--accent) 30%, var(--border));
+  border-right-color: color-mix(in oklch, var(--accent) 30%, var(--border));
+  border-bottom-color: color-mix(in oklch, var(--accent) 30%, var(--border));
+  box-shadow: 0 10px 24px -16px color-mix(in oklch, var(--accent) 35%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .incident-card:hover {
+    transform: none;
+  }
 }

@@ -54,7 +54,7 @@ export function TopNav() {
               <Link
                 key={tab.href}
                 href={tab.href}
-                className="relative flex h-full items-center text-sm transition-colors"
+                className="group relative flex h-full items-center text-sm transition-colors"
               >
                 <span
                   className={cn(
@@ -64,9 +64,12 @@ export function TopNav() {
                 >
                   {tab.label}
                 </span>
-                {active && (
-                  <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-accent" />
-                )}
+                <span
+                  className={cn(
+                    "absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-accent transition-opacity duration-200",
+                    active ? "opacity-100" : "opacity-0 group-hover:opacity-40",
+                  )}
+                />
               </Link>
             );
           })}

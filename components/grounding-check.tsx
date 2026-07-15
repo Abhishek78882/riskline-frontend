@@ -13,7 +13,7 @@ export function GroundingCheck({ warnings }: { warnings: string[] }) {
   const [open, setOpen] = useState(hasWarnings);
 
   return (
-    <div className="rounded-lg border border-border bg-surface">
+    <div className="interactive-surface rounded-lg border border-border bg-surface">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

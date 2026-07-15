@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { motion, useReducedMotion, type Variants } from "motion/react";
 import { TopNav } from "@/components/top-nav";
 import { SelectedIncidentProvider } from "@/lib/selected-incident-context";
@@ -15,6 +16,12 @@ const revealVariants: Variants = {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const reduceMotion = useReducedMotion();
+  const pathname = usePathname();
+  // Architecture is a showcase page with no dense data to protect, so it
+  // gets the stronger "medium" atmosphere; every other shell route (data
+  // screens) gets the barely-perceptible "faint" one. See DESIGN.md §1 and
+  // the .app-atmosphere rules in globals.css.
+  const atmosphereIntensity = pathname?.startsWith("/architecture") ? "medium" : "faint";
   const transition = (delay: number) =>
     reduceMotion
       ? { duration: 0 }
@@ -23,8 +30,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <SelectedIncidentProvider>
       <ChatProvider>
-        <div className="atmosphere flex min-h-screen flex-col">
+        <div className="relative isolate flex min-h-screen flex-col">
+          <div
+            className={`app-atmosphere app-atmosphere--${atmosphereIntensity}`}
+            aria-hidden="true"
+          />
+
           <motion.div
+            className="relative z-10"
             initial="hidden"
             animate="visible"
             variants={revealVariants}
@@ -40,7 +53,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               the incident header (incident/[id]/layout.tsx) and, for
               reachability from anywhere else, in TopNav. */}
           <motion.main
-            className="flex-1 px-8 py-8"
+            className="relative z-10 flex-1 px-8 py-8"
             initial="hidden"
             animate="visible"
             variants={revealVariants}

@@ -26,7 +26,7 @@ export function SegmentTable({ rows }: { rows: SegmentEvidenceRow[] }) {
   }
 
   return (
-    <div className="rounded-lg border border-border bg-surface">
+    <div className="interactive-surface rounded-lg border border-border bg-surface">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}

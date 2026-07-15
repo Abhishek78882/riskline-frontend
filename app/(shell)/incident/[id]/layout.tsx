@@ -99,14 +99,17 @@ export default function IncidentDetailLayout({
               key={tab.segment}
               href={datasetHref(basePath, dataset)}
               className={cn(
-                "relative -mb-px flex h-9 items-center text-sm transition-colors",
+                "group relative -mb-px flex h-9 items-center text-sm transition-colors",
                 active ? "text-ink font-medium" : "text-muted hover:text-ink",
               )}
             >
               {tab.label}
-              {active && (
-                <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-accent" />
-              )}
+              <span
+                className={cn(
+                  "absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-accent transition-opacity duration-200",
+                  active ? "opacity-100" : "opacity-0 group-hover:opacity-40",
+                )}
+              />
             </Link>
           );
         })}
